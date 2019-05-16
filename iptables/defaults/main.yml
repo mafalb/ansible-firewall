@@ -1,0 +1,7 @@
+---
+iptables:
+  script: "{{ playbook_dir + '/' + iptables_script|default('iptables') }}"
+
+ip6tables:
+  script: "{{ playbook_dir + '/' + ip6tables_script|default('ip6tables') }}"
+...

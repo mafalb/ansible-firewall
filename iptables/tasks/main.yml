@@ -1,0 +1,42 @@
+---
+
+- name: load OS specific variables
+  include_vars:
+    - file: "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+
+- debug: var=firewall
+  tags:
+    - never
+    - debug
+
+- name: iptables package is present
+  package:
+    name: "{{ iptables.packages }}"
+    state: present
+
+- name: iptables is configured
+  template:
+    src: "{{ iptables.script }}"
+    dest: /etc/sysconfig/iptables
+    backup: true
+    owner: root
+    mode: 00600
+  notify:
+    - reload iptables
+
+- name: ip6tables is configured
+  template:
+    src: "{{ ip6tables.script }}"
+    dest: /etc/sysconfig/ip6tables
+    backup: true
+    mode: 00600
+  notify:
+    - reload ip6tables
+
+- name: iptables service is started
+  loop:
+    - iptables
+    - ip6tables
+  service:
+    name: "{{ item }}"
+    state: started
