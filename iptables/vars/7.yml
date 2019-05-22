@@ -1,3 +1,0 @@
----
-iptables:
-  package: iptables-service

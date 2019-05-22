@@ -2,37 +2,74 @@
 
 - name: load OS specific variables
   include_vars:
-    - file: "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
+    file: "{{ ansible_distribution }}{{ ansible_distribution_major_version }}.yml"
 
-- debug: var=firewall
+- debug: var=iptables
   tags:
     - never
     - debug
 
+- debug: var=ip6tables
+  tags:
+    - never
+    - debug
+
+- name: assertions
+  assert:
+    that:
+      - ansible_os_family == 'RedHat'
+      - ansible_distribution_major_version in ["6","7"]
+
 - name: iptables package is present
   package:
-    name: "{{ iptables.packages }}"
+    name: "{{ iptables.package }}"
     state: present
 
 - name: iptables is configured
+  when: iptables_script is defined
   template:
-    src: "{{ iptables.script }}"
+    src: "{{ playbook_dir + '/' + iptables_script }}"
     dest: /etc/sysconfig/iptables
     backup: true
     owner: root
     mode: 00600
+    validate: /usr/sbin/iptables-restore -t < %s
+  notify:
+    - reload iptables
+
+- name: iptables is configured
+  when: not iptables_script is defined
+  template:
+    src: iptables
+    dest: /etc/sysconfig/iptables
+    backup: true
+    owner: root
+    mode: 00600
+    validate: /usr/sbin/iptables-restore -t < %s
   notify:
     - reload iptables
 
 - name: ip6tables is configured
+  when: ip6tables_script is defined
   template:
     src: "{{ ip6tables.script }}"
     dest: /etc/sysconfig/ip6tables
     backup: true
     mode: 00600
+    validate: /usr/sbin/ip6tables-restore -t < %s
   notify:
     - reload ip6tables
 
+- name: ip6tables is configured
+  when: not ip6tables_script is defined
+  template:
+    src: ip6tables
+    dest: /etc/sysconfig/ip6tables
+    backup: true
+    mode: 00600
+    validate: /usr/sbin/ip6tables-restore -t < %s
+  notify:
+    - reload ip6tables
 - name: iptables service is started
   loop:
     - iptables
@@ -40,3 +77,4 @@
   service:
     name: "{{ item }}"
     state: started
+    enabled: true
