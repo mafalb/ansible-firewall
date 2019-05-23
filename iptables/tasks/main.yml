@@ -24,6 +24,17 @@
   package:
     name: "{{ iptables.package }}"
     state: present
+# iptables-restore reads from stdin
+# input redirection is not present for validate
+#
+- name: iptables-restore-wrapper is present
+  loop:
+    - iptables-restore-test
+    - ip6tables-restore-test
+  copy:
+    src: "{{ item }}"
+    dest: /usr/local/sbin/
+    mode: 00750
 
 - name: iptables is configured
   when: iptables_script is defined
@@ -33,7 +44,7 @@
     backup: true
     owner: root
     mode: 00600
-    validate: /usr/sbin/iptables-restore -t < %s
+    validate: "/usr/local/sbin/iptables-restore-test %s"
   notify:
     - reload iptables
 
@@ -45,7 +56,7 @@
     backup: true
     owner: root
     mode: 00600
-    validate: /usr/sbin/iptables-restore -t < %s
+    validate: "/usr/local/sbin/iptables-restore-test %s"
   notify:
     - reload iptables
 
@@ -56,7 +67,7 @@
     dest: /etc/sysconfig/ip6tables
     backup: true
     mode: 00600
-    validate: /usr/sbin/ip6tables-restore -t < %s
+    validate: "/usr/local/sbin/ip6tables-restore-test %s"
   notify:
     - reload ip6tables
 
@@ -67,9 +78,10 @@
     dest: /etc/sysconfig/ip6tables
     backup: true
     mode: 00600
-    validate: /usr/sbin/ip6tables-restore -t < %s
+    validate: "/usr/local/sbin/ip6tables-restore-test %s"
   notify:
     - reload ip6tables
+
 - name: iptables service is started
   loop:
     - iptables

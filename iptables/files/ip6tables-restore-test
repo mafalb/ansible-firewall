@@ -1,0 +1,10 @@
+#!/bin/bash
+
+SOURCE=$1
+
+if test -r "$1"
+then
+    /sbin/ip6tables-restore -t < $1
+else
+    exit 1
+fi
